@@ -1,0 +1,12 @@
+{
+  "name": "hepuykusuz-bot",
+  "version": "1.0.0",
+  "main": "uykusuz.js",
+  "author": "scriptype",
+  "dependencies": {
+    "http-request": "~0.6.3"
+  },
+  "keywords": [
+    "bot", "uykusuz"
+  ]
+}
