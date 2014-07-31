@@ -21,6 +21,9 @@ function uykusuz() {
   var req = http.request(options, function(res) {
     // Assumption: redirects to an image's single page, save it.
     var location = res.headers.location
+    // If no redirection, there should be a server error.
+    if (!location)
+      throw "hepuykusuz.net is down."
 
     // If this location is stumbled before, skip.
     if (locationsVisited.filter(function(e) {return e === location}).length) {
@@ -47,6 +50,7 @@ function uykusuz() {
       // When data is ready.
       res2.on("data", function(chunk) {
         // Match main image (extension part isnt included for easy regex).
+        // TODO: Use cheerio instead of regex for parsing HTML.
         var imageMatched = chunk.match(/http:\/\/www.hepuykusuz.net\/upload\/([A-Za-z0-9-]+)/gi)
 
         /* If an image is found (returns null in some instances.),
