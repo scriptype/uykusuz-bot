@@ -3,14 +3,9 @@ install
 
   > npm install
 
-kullanim
+usage
 ===========
 
-  * 10 tane karikatur getir
+  * get 10 images
 
-  > node uykusuz.js 10
-
-notlar
-============
-
-* windows'ta http-request yuklenmiyor.
+  > node uykusuz 10
