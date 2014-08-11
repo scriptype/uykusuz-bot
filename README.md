@@ -6,6 +6,6 @@ install
 usage
 ===========
 
-  * get 10 images
+* get 10 images
 
-  > node uykusuz 10
+> node `uykusuz` 10
