@@ -34,7 +34,7 @@ function uykusuz() {
     }
 
     // If this location is stumbled before, skip.
-    if (isViewed(location, locationsVisited)) {
+    if (_isViewed(location, locationsVisited)) {
       console.log("# URI is already viewed, making a new request.")
       // Make another request, as this page has already been visited.
       extraQueryNum++
@@ -46,7 +46,7 @@ function uykusuz() {
     locationsVisited.push(location)
 
     // Prepare path for next request, easy deep copy.
-    var options2 = JSON.parse(JSON.stringify(options)),
+    var options2 = _easyCopy(options),
         // Change path to redirected url.
         path = location.replace("http://www.hepuykusuz.net", "")
     // Add path variable to second request's options.
@@ -65,11 +65,11 @@ function uykusuz() {
             imageSource = $(DOMelement, DOMcontext).attr("src")
 
         /* If an image is found (returns null in some instances.),
-         * Make a request to image URI. */
+         * make a request to image URI. */
         if (imageSource) {
 
           // Check if image is loaded before on a different page.
-          if (isViewed(imageSource, imagesLoaded)) {
+          if (_isViewed(imageSource, imagesLoaded)) {
             console.log("# Image is viewed before, making a new request.")
             // Make another request, as this image has already been visited.
             extraQueryNum++
@@ -85,7 +85,7 @@ function uykusuz() {
               // Set path for next request.
               path = "/upload/" + fileName,
               // Request options for next request.
-              options3 = JSON.parse(JSON.stringify(options2))
+              options3 = _easyCopy(options2)
 
           // "/upload/image-title.jpg"
           options3.path = path
@@ -132,6 +132,10 @@ function uykusuz() {
  *  Utility
  */
 
-function isViewed (str, arr) {
+function _isViewed (str, arr) {
   return !!arr.filter(function(e) {return e === str}).length
+}
+
+function _easyCopy (obj) {
+  return JSON.parse(JSON.stringify(obj))
 }
