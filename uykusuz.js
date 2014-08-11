@@ -2,33 +2,42 @@ var fs       = require("fs"),
     http     = require("http"),
     cheerio  = require("cheerio")
 
-var queryNum  = Number(process.argv[2]),
-    options  = {
+var queryNum       = Number(process.argv[2]),
+    extraQueryNum  = 0,
+    options        = {
       host: 'hepuykusuz.net',
       port: 80,
       method: 'POST'
     },
     locationsVisited = [],
-    imagesLoaded = [],
-    imagesSaved = []
+    imagesLoaded = []
+
+const qNum = queryNum
 
 // Call request function as many times as command-line argument.
 while (queryNum--)
   uykusuz()
 
+console.log("Waiting for responses...")
+
 function uykusuz() {
+  console.log("# Making request #" + (qNum - queryNum + extraQueryNum) +"...")
   // Make request to home page.
   var req = http.request(options, function(res) {
     // Assumption: redirects to an image's single page, save it.
     var location = res.headers.location
     // If no redirection, there should be a server error.
-    if (!location)
-      throw "hepuykusuz.net is down."
+    if (!location) {
+      console.log(options.host + " is down.")
+      // Deadend.
+      return
+    }
 
     // If this location is stumbled before, skip.
-    if (locationsVisited.filter(function(e) {return e === location}).length) {
-      console.log("##### SAME LOCATION")
+    if (isViewed(location, locationsVisited)) {
+      console.log("# URI is already viewed, making a new request.")
       // Make another request, as this page has already been visited.
+      extraQueryNum++
       uykusuz()
       // Skip this page.
       return
@@ -60,9 +69,10 @@ function uykusuz() {
         if (imageSource) {
 
           // Check if image is loaded before on a different page.
-          if (imagesLoaded.filter(function(e){return e === imageSource}).length) {
-            console.log("##### SAME IMAGE")
+          if (isViewed(imageSource, imagesLoaded)) {
+            console.log("# Image is viewed before, making a new request.")
             // Make another request, as this image has already been visited.
+            extraQueryNum++
             uykusuz()
             // Skip this image.
             return
@@ -85,13 +95,14 @@ function uykusuz() {
             var file = fs.createWriteStream(fileName)
             // Pipe the file data.
             res3.pipe(file)
-            console.log("SAVED:", fileName)
+            console.log("# Image saved:", fileName)
           })
 
           // Error handling for request 3.
           req3.on('error', function(e) {
-            console.log("##### ERROR WITH URL:", err.url)
+            console.log("# Error with URI:", e.url)
             // Make another request, as this image couldn't be saved.
+            extraQueryNum++
             uykusuz()
           })
           // Finish request 3.
@@ -115,4 +126,12 @@ function uykusuz() {
   })
   // Finish connection.
   req.end()
+}
+
+/*
+ *  Utility
+ */
+
+function isViewed (str, arr) {
+  return !!arr.filter(function(e) {return e === str}).length
 }
