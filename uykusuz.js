@@ -1,6 +1,6 @@
 var fs       = require("fs"),
     http     = require("http"),
-    httpReq  = require("http-request")
+    cheerio  = require("cheerio")
 
 var queryNum  = Number(process.argv[2]),
     options  = {
@@ -46,19 +46,21 @@ function uykusuz() {
     // Make request to redirected url.
     var req2 = http.request(options2, function(res2) {
       // Prepare buffer for reading.
-      res2.setEncoding('utf8');
+      res2.setEncoding('utf8')
       // When data is ready.
       res2.on("data", function(chunk) {
-        // Match main image (extension part isnt included for easy regex).
-        // TODO: Use cheerio instead of regex for parsing HTML.
-        var imageMatched = chunk.match(/http:\/\/www.hepuykusuz.net\/upload\/([A-Za-z0-9-]+)/gi)
+        var $ = cheerio.load(chunk)
+        // Get image element and its source.
+        var DOMcontext = "div#video_space",
+            DOMelement = "img.images[src^='http://www.hepuykusuz.net/upload/']",
+            imageSource = $(DOMelement, DOMcontext).attr("src")
 
         /* If an image is found (returns null in some instances.),
-         * continue on making a request to image */
-        if (imageMatched) {
+         * Make a request to image URI. */
+        if (imageSource) {
 
           // Check if image is loaded before on a different page.
-          if (imagesLoaded.filter(function(e){return e === imageMatched[0]}).length) {
+          if (imagesLoaded.filter(function(e){return e === imageSource}).length) {
             console.log("##### SAME IMAGE")
             // Make another request, as this image has already been visited.
             uykusuz()
@@ -66,30 +68,34 @@ function uykusuz() {
             return
           }
           // Save image url to images list.
-          imagesLoaded.push(imageMatched[0])
+          imagesLoaded.push(imageSource)
 
-          // Append extension to url.
-          var imageURI = imageMatched[0] + ".jpg",
-              // http-request module's options format.
-              options3 = {url: imageURI},
-              // Set filename to its original name.
-              fileName = imageURI.replace("http://www.hepuykusuz.net/upload/", "")
+          // Set filename to its original name.
+          var fileName = imageSource.replace("http://www.hepuykusuz.net/upload/", ""),
+              // Set path for next request.
+              path = "/upload/" + fileName,
+              // Request options for next request.
+              options3 = JSON.parse(JSON.stringify(options2))
 
-          // Make a get request to image with http-request module.
-          var req3 = httpReq.get(options3, fileName, function(err, res3) {
-            // Console.log if error.
-            if (err) {
-              console.log("##### ERROR WITH URL:", err.url)
-              // Make another request, as this image couldn't be saved.
-              uykusuz()
-            }
-            // If no error, log it also.
-            else {
-              imagesSaved.push(res3.file)
-              console.log("SAVED:", res3.file)
-            }
+          // "/upload/image-title.jpg"
+          options3.path = path
+          // Make request to image URI.
+          var req3 = http.request(options3, function(res3) {
+            // File data.
+            var file = fs.createWriteStream(fileName)
+            // Pipe the file data.
+            res3.pipe(file)
+            console.log("SAVED:", fileName)
           })
 
+          // Error handling for request 3.
+          req3.on('error', function(e) {
+            console.log("##### ERROR WITH URL:", err.url)
+            // Make another request, as this image couldn't be saved.
+            uykusuz()
+          })
+          // Finish request 3.
+          req3.end()
         }
 
       })
